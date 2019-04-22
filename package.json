@@ -1,19 +1,28 @@
 {
   "devDependencies": {
     "babel-eslint": "^10.0.1",
+    "chai": "^4.2.0",
     "eslint": "5.11.1",
     "eslint-config-prettier": "3.3.0",
     "eslint-plugin-prettier": "3.0.1",
-    "prettier": "1.15.3"
+    "mocha": "^6.0.2",
+    "prettier": "1.15.3",
+    "should": "^13.2.3"
   },
   "dependencies": {
     "ab-utils": "Hiro-Nakamura/ab-utils#master",
     "async": "^2.6.1",
+    "current-processes": "^0.2.1",
     "forever": "^0.15.3",
+    "lodash": "^4.17.11",
     "nodemon": "^1.18.10",
+    "pidusage": "^2.0.17",
     "shelljs": "^0.8.3"
   },
   "scripts": {
+    "test": "run-p lint custom-tests",
+    "lint": "eslint . --max-warnings=0 --report-unused-disable-directives && echo '✔  Your .js files look good.'",
+    "custom-tests": "./node_modules/.bin/mocha --reporter dot test/bootstrap.test.js test/**/*.js",
     "ssl": "",
     "boot": "docker stack deploy -c docker-compose.yml ab & ./node_modules/.bin/forever start app.js",
     "dev": "docker-compose -f docker-compose.dev.yml up & node_modules/.bin/nodemon app.js"

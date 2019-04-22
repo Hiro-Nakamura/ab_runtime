@@ -1,8 +1,13 @@
-const net = require("net");
-const fs = require("fs");
-const shell = require("shelljs");
-const async = require("async");
 const AB = require("ab-utils");
+//const async = require("async");
+const fs = require("fs");
+const net = require("net");
+const path = require("path");
+const process_watch = require(path.join(__dirname, "src", "process_watch.js"));
+const psLookup = require("current-processes");
+const pidusage = require('pidusage')
+const shell = require("shelljs");
+//const _ = require("lodash");
 
 // const SOCKETFILE = "1338";
 // const SOCKETFILE = "/tmp/ab.sock";
@@ -18,6 +23,7 @@ var checkID = null;
 // Connections to the running bot_manager in our swarm.
 //
 const config = AB.config("bot_manager");
+
 var isSockConnection = true;
 var SOCKETFILE = "/tmp/ab.sock";
 var PORT = "1338";
@@ -77,7 +83,8 @@ function checkRunning() {
           lines.forEach(l => {
             var match = parseLine.exec(l);
             if (match) {
-              offlineContainers.push(`${match[2]}`); // ${match[2]}(${match[3]})
+              offlineContainers.push(
+                `${match[2]}`); // ${match[2]}(${match[3]})
             }
           });
           if (offlineContainers.length > 0) {
@@ -95,9 +102,13 @@ function checkRunning() {
 function createServer(socket) {
   console.log("Creating server.");
   var server = net
-    .createServer(function(stream) {
+    .createServer(function (stream) {
       console.log("Connection acknowledged.");
       currStream = stream;
+
+      // Now that currStream is updated, send update to process_watch
+      // pass in ps and pid checker libraries, and the new stream
+      process_watch.init(psLookup, pidusage, currStream)
 
       stream._sentValidToken = false;
 
@@ -105,13 +116,13 @@ function createServer(socket) {
       // An object is better than an array for these.
       var self = Date.now();
       connections[self] = stream;
-      stream.on("end", function() {
+      stream.on("end", function () {
         console.log("Client disconnected.");
         delete connections[self];
       });
 
       // Messages are buffers. use toString
-      stream.on("data", function(msg) {
+      stream.on("data", function (msg) {
         msg = msg.toString();
 
         console.log("Client:", msg);
@@ -139,7 +150,7 @@ function createServer(socket) {
       });
     })
     .listen(socket)
-    .on("connection", function(socket) {
+    .on("connection", function (socket) {
       console.log("Client connected.");
     });
   return server;
@@ -147,7 +158,7 @@ function createServer(socket) {
 
 // manage unix socket:
 console.log("Checking for leftover socket.");
-fs.stat(SOCKETFILE, function(err, stats) {
+fs.stat(SOCKETFILE, function (err, stats) {
   if (err) {
     // start server
     console.log("No leftover socket found.");
@@ -156,7 +167,7 @@ fs.stat(SOCKETFILE, function(err, stats) {
   }
   // remove file then start server
   console.log("Removing leftover socket.");
-  fs.unlink(SOCKETFILE, function(err) {
+  fs.unlink(SOCKETFILE, function (err) {
     if (err) {
       // This should never happen.
       console.error(err);
@@ -169,3 +180,7 @@ fs.stat(SOCKETFILE, function(err, stats) {
 
 // now setup our checkRunning() operation
 setInterval(checkRunning, 5 * 1000);
+
+// now setup our checkUsage() operation
+setInterval(process_watch.checkProcess, 60 * 1000); // 1 min
+setInterval(process_watch.reportHighUsageProcess, 30 * 60 * 1000); // 30 min

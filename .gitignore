@@ -43,3 +43,5 @@ lib-cov
 *.log
 *.out
 *.pid
+
+test/tests\.txt
