@@ -7,6 +7,7 @@
       "definition_manager": "1.5.2_p11420.c22000",
       "file_processor": "1.2.19_p11421",
       "log_manager": "1.2.4",
+      "mcp_server": "master",
       "notification_email": "1.2.1",
       "process_manager": "1.2.28_p11421",
       "relay": "1.1.5",
